@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App</title>
+</head>
+
+<body>
+
+    <h2>Group name: {{groupname}}</h2>
+    <textarea name="chat-log" id="chat-log" cols="100" rows="30"></textarea> <br>
+    <input type="text" name="chat-message-input" id="chat-message-input" size="70"> <br>
+    <input type="submit" value="Send" id="chat-message-submit">
+
+    <!-- Django preffered safe method to use context in javaScript -->
+    {{groupname|json_script:"group-name"}}
+    <script>
+        const groupName = JSON.parse(document.getElementById("group-name").textContent)
+        console.log(groupName);
+        // let ws = new WebSocket('ws://127.0.0.1:8000/ws/sc/')
+        let ws = new WebSocket(
+            'ws://' + window.location.host + '/ws/sc/' + groupName + '/'
+        )
+
+        ws.onopen = function () {
+            console.log('Websocket connection open...');
+        }
+
+        ws.onmessage = function (event) {
+            console.log('Message received from server...', event.data);
+            const data = JSON.parse(event.data)
+            console.log("Actual data is...", data.msg);
+            document.getElementById("chat-log").value += (data.msg + "\n");
+        }
+
+        ws.onerror = function (event) {
+            console.log('Websocket error occured...', event);
+        }
+
+        ws.onclose = function (event) {
+            console.log('Websocket connection closed...', event);
+        }
+
+        const btn = document.getElementById("chat-message-submit")
+
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const msg_field = document.getElementById("chat-message-input")
+            const msg = msg_field.value
+            console.log(msg);
+            ws.send(JSON.stringify({
+                'msg': msg
+            }))
+
+            msg_field.value = '';
+        })
+    </script>
+</body>
+
+</html>
